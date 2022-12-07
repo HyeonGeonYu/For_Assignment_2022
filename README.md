@@ -27,7 +27,7 @@ conda create -n communicationsystem python=3.10
 2. activate
 ```sh
 activate communicationsystem
-cd PycharmProjects\communicationsystem
+cd PycharmProjects\For_Assignment_2022
 ```
 
 3. install requirements
@@ -38,5 +38,5 @@ conda install --file requirements_conda.txt
 ## How to run
 
 ```sh
-python trans_img_simulator.py
+python main_simul.py
 ``` 
