@@ -41,11 +41,7 @@ class communicationsystem:
         self.out_data = None                                            # 입력 데이터형태로 변경된 결과물.
 
 def modulation(inp_class):
-
-    if inp_class.modulation_scheme == "BPSK":
-        inp_class.modulation_result = np.where(inp_class.channel_coding_result_np  == 2, np.nan, inp_class.channel_coding_result_np)
-        inp_class.modulation_result = np.where(inp_class.modulation_result == 0, -1, inp_class.modulation_result)
-    elif inp_class.modulation_scheme == "QPSK":
+    if inp_class.modulation_scheme == "QPSK":
         refer_arr  = inp_class.channel_coding_result_np.reshape(-1,2)
         inp_class.modulation_result = np.zeros(refer_arr.shape[0],dtype='complex')
         inp_class.modulation_result = np.where((refer_arr == [0, 0]).all(axis=1),inp_class.power_of_symbol*(1+1j),inp_class.modulation_result)
@@ -56,12 +52,11 @@ def modulation(inp_class):
         raise Exception('모듈레이션 scheme 확인필요')
 def channel_awgn(inp_class):
     mod_size = inp_class.modulation_result.size #symbol 갯수
-    mod_shape = inp_class.modulation_result.shape
     Trans_num = int(mod_size/inp_class.Tx)
-    channel_shape = (Trans_num,inp_class.Rx,inp_class.Tx) # [Rx x Tx x (symbol/matrix_size)]
-    Tx_shape = (Trans_num,inp_class.Tx,1)
+    channel_shape = (Trans_num,inp_class.Rx,inp_class.Tx) # [Rx x Tx x (symbol/Tx)]
     inp_class.channel_result = np.zeros((Trans_num,inp_class.Rx,1),dtype='complex')
     reshape_mod_result = inp_class.modulation_result.reshape(Trans_num,inp_class.Tx,1)
+
     if (inp_class.Tx>1) & (inp_class.Rx>1) :
         antenna_scheme = "MIMO"
     if inp_class.modulation_scheme == "QPSK":
@@ -82,7 +77,7 @@ def demodulation(inp_class):
         inp_class.demodulation_result1[np.where((real_arr < 0) & (imag_arr < 0))[0]] = np.array([1,1])
         inp_class.demodulation_result1 = inp_class.demodulation_result1.reshape(inp_class.channel_coding_result_np.shape)
 
-        #ML
+        ####ML
         inp_class.demodulation_result2 = np.zeros_like(inp_class.channel_coding_result_np).reshape(-1, 2)
         QPSK_sym_arr = inp_class.power_of_symbol*np.array([[1+1j],[-1+1j],[1-1j],[-1-1j]],dtype='complex')
         QPSK_sym_arr_mapper = np.array([[0,0],[1,0],[0,1],[1,1]])
@@ -94,18 +89,24 @@ def demodulation(inp_class):
         i_num = inp_class.channel_H.shape[0]
         k_num = QPSK_sym_perm.shape[0]
 
-        for i in range(i_num) :
-            for k in range(k_num) :
-                if k ==0:
-                    min_num = np.linalg.norm(inp_class.channel_result[i]-np.dot(inp_class.channel_H[i],QPSK_sym_perm[k]),2)
-                    k_min_idx = k
-                else:
-                    norm_val = np.linalg.norm(inp_class.channel_result[i]-np.dot(inp_class.channel_H[i],QPSK_sym_perm[k]), 2)
-                    if min_num> norm_val:
-                        min_num = norm_val
-                        k_min_idx = k
-            inp_class.demodulation_result2[i*inp_class.Tx:i*inp_class.Tx+inp_class.Tx] = QPSK_sym_perm_mapper[k_min_idx]
+        #import time
+        #a = time.time()
+        #### 현재 100000개 0.4초걸림
+        #np.einsum('rmn,rnd->rmd', inp_class.channel_H, QPSK_sym_perm)
+        #hannel_result_shape = inp_class.channel_result.shape
+        #repeat_shape = (channel_result_shape[0],QPSK_sym_perm_mapper.shape[0],channel_result_shape[1],channel_result_shape[2])
+        #repeat_arr = np.repeat(inp_class.channel_result, QPSK_sym_perm_mapper.shape[0], axis=0).reshape(repeat_shape)
+        #test_ = np.einsum('amn,bnd->abmd', inp_class.channel_H, QPSK_sym_perm)
+        #test_2 = repeat_arr-test_
+        #test_3 = np.argmin(np.einsum('rmna,rmna->rm', np.conj(test_2), test_2).real,axis=1)
+        # test_4 = QPSK_sym_perm_mapper[test_3].reshape(-1,2)
 
+        for i in range(i_num) :
+            test = np.einsum('mn,rnd->rmd', inp_class.channel_H[i], QPSK_sym_perm)
+            test2 = inp_class.channel_result[i] - test
+            min_idx = np.argmin(np.sqrt(np.einsum('rmn,rmn->r', np.conj(test2), test2).real))
+            inp_class.demodulation_result2[i*inp_class.Tx:i*inp_class.Tx+inp_class.Tx] = QPSK_sym_perm_mapper[min_idx]
+        #print("걸린시간 : ", time.time() - a)
     else:
         raise Exception('모듈레이션 scheme 확인필요')
 
@@ -117,10 +118,9 @@ def make_result_class(inp_file_dir,source_coding_type,channel_coding_type,draw_h
                                     modulation_scheme,fading_scheme, Tx, Rx,
                                     mu,SNR)
 
-    inp_class.channel_coding_result_np = np.random.randint(0,2,(1000,16)) #0과1 랜덤하게 16000개 생성
-
+    inp_class.channel_coding_result_np = np.random.randint(0,2,(1000,1000)) #0과1 랜덤하게 1600개 생성
     modulation(inp_class)
+
     channel_awgn(inp_class)
     demodulation(inp_class)
-
     return inp_class
