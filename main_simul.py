@@ -10,6 +10,9 @@ source_coding_type = None
 channel_coding_type = None
 draw_huffmantree = None
 modulation_scheme = "QPSK"
+fading_scheme = "Rayleigh"
+Tx = 2
+Rx = 2
 mu = 0
 
 SNR_arr = np.arange(0,35,5)
@@ -17,10 +20,11 @@ SER_result = []
 for SNR in SNR_arr: # SNR  #dB
     std = between_std_SNR.SNR_2_std(SNR)
     result_class = communicationsystem.make_result_class(inp_file_dir,source_coding_type,channel_coding_type,draw_huffmantree,
-                                                   modulation_scheme, mu, std)
+                                                   modulation_scheme,fading_scheme, Tx, Rx, mu, std)
     #####SER 확인
     Tx_sym = result_class.channel_coding_result_np.reshape(-1,2) #보낸 심볼
-    Rx_sym = result_class.demodulation_result.reshape(-1,2) # 받은 심볼
+    Rx_sym_no = result_class.demodulation_result1.reshape(-1,2) # no
+    Rx_sym_ML = result_class.demodulation_result1.reshape(-1, 2)  # ML
     num_sym = Tx_sym.shape[0]
     num_err = num_sym - np.count_nonzero(np.all(Tx_sym == Rx_sym,axis=1)) #err 갯수
     SER = num_err/num_sym
