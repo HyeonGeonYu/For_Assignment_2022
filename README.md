@@ -1,6 +1,8 @@
-#
-[Modification on 5G NR mapper.](https://www.researchgate.net/figure/Modification-on-5G-NR-mapper_fig2_342162911)
+# [Modification on 5G NR mapper.](https://www.researchgate.net/figure/Modification-on-5G-NR-mapper_fig2_342162911)
 ![QPSK_constellation.bmp](for_study/QPSK_constellation.bmp)
+
+# 만들고자하는 그래프
+![Detection Performance.bmp](for_study/Detection Performance.bmp)
 
 
 코드 수정 목록

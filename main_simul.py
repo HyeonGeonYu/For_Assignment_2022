@@ -26,8 +26,10 @@ for SNR in SNR_arr: # SNR  #dB
     SER = num_err/num_sym
     SER_result.append(SER)
     print("%.2fdB, %.4f "%(SNR, SER))
+
 plt.yscale('log', base=10)
 plt.ylim([10**-4,10**-0 ])
+plt.yticks(fontname="DejaVu Sans")
 plt.grid(linestyle = ':')
 plt.plot(SNR_arr,SER_result)
 plt.show()
