@@ -1,19 +1,11 @@
-# simulation 예시
-![EX_trans_img_simulator](for_study/EX_trans_img_simulator.png)
-# Communication System
-![system_diagram](for_study/system_diagram.png)
-# Huffman Tree
-![result_huffman](for_study/result_huffman.png)
-
-# Repetition code 성능
-![Repetition_code_result](for_study/Repetition_code_result.png)
+#
+[Modification on 5G NR mapper.](https://www.researchgate.net/figure/Modification-on-5G-NR-mapper_fig2_342162911)
+![QPSK_constellation.bmp](for_study/QPSK_constellation.bmp)
 
 
 코드 수정 목록
 ```python
-# 시작 _ 11.03
-# Nocompression _ 11.26
-# Repetition_code _ 11.30
+# 시작 _ 12.05
 ```
 
 ## Dependencies
