@@ -2,7 +2,7 @@
 ![QPSK_constellation.bmp](for_study/QPSK_constellation.bmp)
 
 # 만들고자하는 그래프
-![Detection Performance.bmp](for_study/Detection Performance.bmp)
+![Detection Performance.bmp](for_study/DetectionPerformance.bmp)
 
 
 코드 수정 목록
