@@ -11,8 +11,8 @@ channel_coding_type = None
 draw_huffmantree = None
 modulation_scheme = "QPSK"
 fading_scheme = "Rayleigh"
-Tx = 4
-Rx = 4
+Tx = 3
+Rx = 3
 mu = 0
 
 SNR_arr = np.linspace(0, 30, 11)

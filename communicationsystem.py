@@ -147,23 +147,73 @@ def demodulation(inp_class):
         #####
 
         ####################ZF_SIC
-        '''
         inp_class.demodulation_result5 = np.zeros_like(inp_class.channel_coding_result_np).reshape(-1, 2)
+        channel_H_for_ZF_SIC = np.copy(inp_class.channel_H)
+        ###테스트코드--------------------------
+        H_h__for_ZF_SIC = np.einsum('ijk->ikj', np.conj(channel_H_for_ZF_SIC))
+        H_h__H__inv_for_ZF_SIC = np.linalg.pinv(np.einsum('abc,acd->abd', H_h__for_ZF_SIC, channel_H_for_ZF_SIC))
+        W_h_ZF = np.einsum('dab,dbc->dac', H_h__H__inv_for_ZF_SIC, H_h__for_ZF_SIC)
+        ###테스트코드--------------------------
+
         SIC_test1 = np.einsum('ij->ji', np.conj(W_h_ZF[0]))
-        norm_wi = np.einsum('ab,ba->a',SIC_test1, W_h_ZF[0])
+        norm_wi1 = np.einsum('ab,ba->b',SIC_test1, W_h_ZF[0]).real
+        min_idx_ZF_SIC1 = np.argmin(norm_wi1)
+        x1_hat = np.einsum('ij,ji->i',W_h_ZF[0,min_idx_ZF_SIC1:min_idx_ZF_SIC1+1,:],inp_class.channel_result[0])
+        if (x1_hat.real>0) & (x1_hat.imag>0) :
+            x1_hat = QPSK_sym_arr[0]
+        elif (x1_hat.real<0) & (x1_hat.imag>0) :
+            x1_hat = QPSK_sym_arr[1]
+        elif (x1_hat.real>0) & (x1_hat.imag<0) :
+            x1_hat = QPSK_sym_arr[2]
+        elif (x1_hat.real<0) & (x1_hat.imag<0) :
+            x1_hat = QPSK_sym_arr[3]
+        y1 = inp_class.channel_result[0] - channel_H_for_ZF_SIC[0,:,min_idx_ZF_SIC1:min_idx_ZF_SIC1+1]*x1_hat
+        ####################y1
 
-        x_hat = np.einsum('abc,acd->abd', W_h_ZF, inp_class.channel_result)
-        real_arr = x_hat.reshape(-1, 1).real
-        imag_arr = x_hat.reshape(-1, 1).imag
-        inp_class.demodulation_result3[np.where((real_arr > 0) & (imag_arr > 0))[0]] = np.array([0, 0])
-        inp_class.demodulation_result3[np.where((real_arr < 0) & (imag_arr > 0))[0]] = np.array([1, 0])
-        inp_class.demodulation_result3[np.where((real_arr > 0) & (imag_arr < 0))[0]] = np.array([0, 1])
-        inp_class.demodulation_result3[np.where((real_arr < 0) & (imag_arr < 0))[0]] = np.array([1, 1])
-        inp_class.demodulation_result3 = inp_class.demodulation_result3.reshape(
-            inp_class.channel_coding_result_np.shape)
-        '''
-        ######
+        channel_H_for_ZF_SIC[0, :, min_idx_ZF_SIC1:min_idx_ZF_SIC1 + 1] =np.zeros((channel_H_for_ZF_SIC[0, :, min_idx_ZF_SIC1:min_idx_ZF_SIC1 + 1]).shape)
+        H_h__for_ZF_SIC = np.transpose(np.conj(channel_H_for_ZF_SIC[0]))
+        H_h__H__inv_for_ZF_SIC = np.linalg.pinv(np.einsum('bc,cd->bd',H_h__for_ZF_SIC,channel_H_for_ZF_SIC[0]))
+        W_h_ZF_SIC2 = np.einsum('ab,bc->ac',H_h__H__inv_for_ZF_SIC,H_h__for_ZF_SIC)
 
+        SIC_test2 = np.einsum('ij->ji', np.conj(W_h_ZF_SIC2))
+        norm_wi2 = np.einsum('ab,ba->b', SIC_test2, W_h_ZF_SIC2).real
+        norm_wi2[min_idx_ZF_SIC1] = 0
+        min_idx_ZF_SIC2 = norm_wi2.argsort()[1]
+        x2_hat = np.einsum('ij,ji->i', W_h_ZF_SIC2[min_idx_ZF_SIC2:min_idx_ZF_SIC2 + 1, :], y1)
+
+        if (x2_hat.real>0) & (x2_hat.imag>0) :
+            x2_hat = QPSK_sym_arr[0]
+        elif (x2_hat.real<0) & (x2_hat.imag>0) :
+            x2_hat = QPSK_sym_arr[1]
+        elif (x2_hat.real>0) & (x2_hat.imag<0) :
+            x2_hat = QPSK_sym_arr[2]
+        elif (x2_hat.real<0) & (x2_hat.imag<0) :
+            x2_hat = QPSK_sym_arr[3]
+        y2 = y1 - channel_H_for_ZF_SIC[0, :, min_idx_ZF_SIC2:min_idx_ZF_SIC2 + 1] * x2_hat
+        ####################y2
+
+        channel_H_for_ZF_SIC[0, :, min_idx_ZF_SIC2:min_idx_ZF_SIC2 + 1] = np.zeros(
+            (channel_H_for_ZF_SIC[0, :, min_idx_ZF_SIC2:min_idx_ZF_SIC2 + 1]).shape)
+        H_h__for_ZF_SIC = np.transpose(np.conj(channel_H_for_ZF_SIC[0]))
+        H_h__H__inv_for_ZF_SIC = np.linalg.pinv(np.einsum('bc,cd->bd', H_h__for_ZF_SIC, channel_H_for_ZF_SIC[0]))
+        W_h_ZF_SIC3 = np.einsum('ab,bc->ac', H_h__H__inv_for_ZF_SIC, H_h__for_ZF_SIC)
+
+        SIC_test3 = np.einsum('ij->ji', np.conj(W_h_ZF_SIC3))
+        norm_wi3 = np.einsum('ab,ba->b', SIC_test3, W_h_ZF_SIC3).real
+        norm_wi3[[min_idx_ZF_SIC1,min_idx_ZF_SIC2]] = 0
+        min_idx_ZF_SIC3 = norm_wi2.argsort()[2]
+        x3_hat = np.einsum('ij,ji->i', W_h_ZF_SIC3[min_idx_ZF_SIC3:min_idx_ZF_SIC3 + 1, :], y2)
+
+        if (x3_hat.real > 0) & (x3_hat.imag > 0):
+            x3_hat = QPSK_sym_arr[0]
+        elif (x3_hat.real < 0) & (x3_hat.imag > 0):
+            x3_hat = QPSK_sym_arr[1]
+        elif (x3_hat.real > 0) & (x3_hat.imag < 0):
+            x3_hat = QPSK_sym_arr[2]
+        elif (x3_hat.real < 0) & (x3_hat.imag < 0):
+            x3_hat = QPSK_sym_arr[3]
+        y3 = y2 - channel_H_for_ZF_SIC[0, :, min_idx_ZF_SIC3:min_idx_ZF_SIC3 + 1] * x3_hat
+        ####################y3
 
     else:
         raise Exception('모듈레이션 scheme 확인필요')
@@ -176,7 +226,7 @@ def make_result_class(inp_file_dir,source_coding_type,channel_coding_type,draw_h
                                     modulation_scheme,fading_scheme, Tx, Rx,
                                     mu,SNR)
 
-    inp_class.channel_coding_result_np = np.random.randint(0,2,(10,10)) #0과1 랜덤하게 1600개 생성
+    inp_class.channel_coding_result_np = np.random.randint(0,2,(1000,90)) #0과1 랜덤하게 1600개 생성
     modulation(inp_class)
 
     channel_awgn(inp_class)
