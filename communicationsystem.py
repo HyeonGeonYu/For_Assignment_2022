@@ -63,8 +63,8 @@ def channel_awgn(inp_class):
     reshape_mod_result = inp_class.modulation_result.reshape(Trans_num,inp_class.Tx,1)
 
     if inp_class.modulation_scheme == "QPSK":
-            inp_class.channel_H = 1 / np.sqrt(2) * np.random.normal(0, 1, (mod_size*inp_class.Rx, 2)).view(np.complex).reshape(channel_shape)
-            inp_class.noise_N = 1/np.sqrt(2)*np.random.normal(inp_class.mu, 1, (mod_size, 2)).view(np.complex).reshape(Trans_num,inp_class.Tx,1)
+            inp_class.channel_H = 1 / np.sqrt(2) * np.random.normal(0, 1, (Trans_num*inp_class.Tx*inp_class.Rx, 2)).view(np.complex).reshape(channel_shape)
+            inp_class.noise_N = 1/np.sqrt(2)*np.random.normal(inp_class.mu, 1, (Trans_num*inp_class.Rx, 2)).view(np.complex).reshape(Trans_num,inp_class.Rx,1)
             for i in range(Trans_num):
                 inp_class.channel_result[i] = np.dot(inp_class.channel_H[i],reshape_mod_result[i]) + inp_class.noise_N[i]
 def demodulation(inp_class):
@@ -145,9 +145,22 @@ def make_result_class(inp_file_dir,source_coding_type,channel_coding_type,draw_h
                                     modulation_scheme,fading_scheme, Tx, Rx,
                                     mu,SNR)
 
-    inp_class.channel_coding_result_np = np.random.randint(0,2,(2,Tx*1)) #0과1 랜덤하게 1600개 생성
+    inp_class.channel_coding_result_np = np.random.randint(0,2,(2,Tx*100000)) #0과1 랜덤하게 1600개 생성
     modulation(inp_class)
 
     channel_awgn(inp_class)
     demodulation(inp_class)
+
+    ##########테스트용
+    Tx_sym = inp_class.channel_coding_result_np.reshape(-1, 2)  # 보낸 심볼
+    Rx_sym_ML = inp_class.demodulation_result2.reshape(-1, 2)  # ML
+    Rx_sym_ZF = inp_class.demodulation_result3.reshape(-1, 2)  # ZF
+    Rx_sym_MMSE = inp_class.demodulation_result4.reshape(-1, 2)  # MMSE
+    Rx_sym_ZF_SIC = inp_class.demodulation_result5.reshape(-1, 2)  # ZF_SIC
+    num_sym = Tx_sym.shape[0]
+    num_err_ML = num_sym - np.count_nonzero(np.all(Tx_sym == Rx_sym_ML, axis=1))
+    num_err_ZF = num_sym - np.count_nonzero(np.all(Tx_sym == Rx_sym_ZF, axis=1))
+    num_err_MMSE = num_sym - np.count_nonzero(np.all(Tx_sym == Rx_sym_MMSE, axis=1))
+    num_err_ZF_SIC = num_sym - np.count_nonzero(np.all(Tx_sym == Rx_sym_ZF_SIC, axis=1))
+    ##########테스트용
     return inp_class

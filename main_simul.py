@@ -11,7 +11,7 @@ channel_coding_type = None
 draw_huffmantree = None
 modulation_scheme = "QPSK"
 fading_scheme = "Rayleigh"
-Tx = 2
+Tx = 4
 Rx = 4
 mu = 0
 
@@ -28,7 +28,7 @@ for SNR in SNR_arr: # SNR  #dB
     #####SER 확인
     Tx_sym = result_class.channel_coding_result_np.reshape(-1,2)             #보낸 심볼
     Rx_sym_ML = result_class.demodulation_result2.reshape(-1, 2)              # ML
-    Rx_sym_ZF = result_class.demodulation_result3.reshape(-1, 2)             # ZFS
+    Rx_sym_ZF = result_class.demodulation_result3.reshape(-1, 2)             # ZF
     Rx_sym_MMSE = result_class.demodulation_result4.reshape(-1, 2)        # MMSE
     Rx_sym_ZF_SIC = result_class.demodulation_result5.reshape(-1, 2)  # ZF_SIC
 
