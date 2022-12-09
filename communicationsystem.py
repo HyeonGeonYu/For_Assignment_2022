@@ -1,5 +1,6 @@
 import numpy as np
 from itertools import product
+from ZF_SIC import ZF_SIC
 class communicationsystem:
     def __init__(self, ext,inp_data,mapped_data,inp_data_unique_arr, inp_data_unique_arr_idx_arr,count,
                  source_coding_type,channel_coding_type,inp_bit_len = None, draw_huffmantree = False,
@@ -33,7 +34,6 @@ class communicationsystem:
         self.channel_coding_result_bit_num = None                       # 채널코딩 결과의 비트수, source_coding_result_bit_num로 계산함.
         self.modulation_result = None                                   # 모듈레이션 결과 2는 nan으로 바뀜.
         self.channel_result = None                                      # 채널겪고난 후 결과
-        self.demodulation_result1 = None                                # 필터없음.
         self.demodulation_result2 = None                                # ML.
         self.demodulation_result3 = None                                # ZF.
         self.demodulation_result4 = None                                # MMSE
@@ -62,26 +62,13 @@ def channel_awgn(inp_class):
     inp_class.channel_result = np.zeros((Trans_num,inp_class.Rx,1),dtype='complex')
     reshape_mod_result = inp_class.modulation_result.reshape(Trans_num,inp_class.Tx,1)
 
-    if (inp_class.Tx>1) & (inp_class.Rx>1) :
-        antenna_scheme = "MIMO"
     if inp_class.modulation_scheme == "QPSK":
-        if (inp_class.fading_scheme == "Rayleigh") & (antenna_scheme == "MIMO"):
             inp_class.channel_H = 1 / np.sqrt(2) * np.random.normal(0, 1, (mod_size*inp_class.Rx, 2)).view(np.complex).reshape(channel_shape)
             inp_class.noise_N = 1/np.sqrt(2)*np.random.normal(inp_class.mu, 1, (mod_size, 2)).view(np.complex).reshape(Trans_num,inp_class.Tx,1)
             for i in range(Trans_num):
                 inp_class.channel_result[i] = np.dot(inp_class.channel_H[i],reshape_mod_result[i]) + inp_class.noise_N[i]
 def demodulation(inp_class):
     if inp_class.modulation_scheme == "QPSK":
-        #필터 없는거
-        inp_class.demodulation_result1 = np.zeros_like(inp_class.channel_coding_result_np).reshape(-1,2)
-        real_arr = inp_class.channel_result.reshape(-1,1).real
-        imag_arr = inp_class.channel_result.reshape(-1,1).imag
-        inp_class.demodulation_result1[np.where((real_arr > 0) & (imag_arr > 0))[0]] = np.array([0,0])
-        inp_class.demodulation_result1[np.where((real_arr < 0) & (imag_arr > 0))[0]] = np.array([1,0])
-        inp_class.demodulation_result1[np.where((real_arr > 0) & (imag_arr < 0))[0]] = np.array([0,1])
-        inp_class.demodulation_result1[np.where((real_arr < 0) & (imag_arr < 0))[0]] = np.array([1,1])
-        inp_class.demodulation_result1 = inp_class.demodulation_result1.reshape(inp_class.channel_coding_result_np.shape)
-
         ####################ML
         inp_class.demodulation_result2 = np.zeros_like(inp_class.channel_coding_result_np).reshape(-1, 2)
         QPSK_sym_arr = inp_class.rootpower_of_symbol*np.array([[(1+1j)/np.sqrt(2)],[(-1+1j)/np.sqrt(2)],[(1-1j)/np.sqrt(2)],[(-1-1j)/np.sqrt(2)]],dtype='complex')
@@ -94,17 +81,6 @@ def demodulation(inp_class):
         i_num = inp_class.channel_H.shape[0]
         k_num = QPSK_sym_perm.shape[0]
 
-        #import time
-        #a = time.time()
-        #### 현재 100000개 0.4초걸림
-        #np.einsum('rmn,rnd->rmd', inp_class.channel_H, QPSK_sym_perm)
-        #hannel_result_shape = inp_class.channel_result.shape
-        #repeat_shape = (channel_result_shape[0],QPSK_sym_perm_mapper.shape[0],channel_result_shape[1],channel_result_shape[2])
-        #repeat_arr = np.repeat(inp_class.channel_result, QPSK_sym_perm_mapper.shape[0], axis=0).reshape(repeat_shape)
-        #test_ = np.einsum('amn,bnd->abmd', inp_class.channel_H, QPSK_sym_perm)
-        #test_2 = repeat_arr-test_
-        #test_3 = np.argmin(np.einsum('rmna,rmna->rm', np.conj(test_2), test_2).real,axis=1)
-        # test_4 = QPSK_sym_perm_mapper[test_3].reshape(-1,2)
         for i in range(i_num) :
             test = np.einsum('mn,rnd->rmd', inp_class.channel_H[i], QPSK_sym_perm)
             test2 = inp_class.channel_result[i] - test
@@ -148,72 +124,15 @@ def demodulation(inp_class):
 
         ####################ZF_SIC
         inp_class.demodulation_result5 = np.zeros_like(inp_class.channel_coding_result_np).reshape(-1, 2)
-        channel_H_for_ZF_SIC = np.copy(inp_class.channel_H)
-        ###테스트코드--------------------------
-        H_h__for_ZF_SIC = np.einsum('ijk->ikj', np.conj(channel_H_for_ZF_SIC))
-        H_h__H__inv_for_ZF_SIC = np.linalg.pinv(np.einsum('abc,acd->abd', H_h__for_ZF_SIC, channel_H_for_ZF_SIC))
-        W_h_ZF = np.einsum('dab,dbc->dac', H_h__H__inv_for_ZF_SIC, H_h__for_ZF_SIC)
-        ###테스트코드--------------------------
-
-        SIC_test1 = np.einsum('ij->ji', np.conj(W_h_ZF[0]))
-        norm_wi1 = np.einsum('ab,ba->b',SIC_test1, W_h_ZF[0]).real
-        min_idx_ZF_SIC1 = np.argmin(norm_wi1)
-        x1_hat = np.einsum('ij,ji->i',W_h_ZF[0,min_idx_ZF_SIC1:min_idx_ZF_SIC1+1,:],inp_class.channel_result[0])
-        if (x1_hat.real>0) & (x1_hat.imag>0) :
-            x1_hat = QPSK_sym_arr[0]
-        elif (x1_hat.real<0) & (x1_hat.imag>0) :
-            x1_hat = QPSK_sym_arr[1]
-        elif (x1_hat.real>0) & (x1_hat.imag<0) :
-            x1_hat = QPSK_sym_arr[2]
-        elif (x1_hat.real<0) & (x1_hat.imag<0) :
-            x1_hat = QPSK_sym_arr[3]
-        y1 = inp_class.channel_result[0] - channel_H_for_ZF_SIC[0,:,min_idx_ZF_SIC1:min_idx_ZF_SIC1+1]*x1_hat
-        ####################y1
-
-        channel_H_for_ZF_SIC[0, :, min_idx_ZF_SIC1:min_idx_ZF_SIC1 + 1] =np.zeros((channel_H_for_ZF_SIC[0, :, min_idx_ZF_SIC1:min_idx_ZF_SIC1 + 1]).shape)
-        H_h__for_ZF_SIC = np.transpose(np.conj(channel_H_for_ZF_SIC[0]))
-        H_h__H__inv_for_ZF_SIC = np.linalg.pinv(np.einsum('bc,cd->bd',H_h__for_ZF_SIC,channel_H_for_ZF_SIC[0]))
-        W_h_ZF_SIC2 = np.einsum('ab,bc->ac',H_h__H__inv_for_ZF_SIC,H_h__for_ZF_SIC)
-
-        SIC_test2 = np.einsum('ij->ji', np.conj(W_h_ZF_SIC2))
-        norm_wi2 = np.einsum('ab,ba->b', SIC_test2, W_h_ZF_SIC2).real
-        norm_wi2[min_idx_ZF_SIC1] = 0
-        min_idx_ZF_SIC2 = norm_wi2.argsort()[1]
-        x2_hat = np.einsum('ij,ji->i', W_h_ZF_SIC2[min_idx_ZF_SIC2:min_idx_ZF_SIC2 + 1, :], y1)
-
-        if (x2_hat.real>0) & (x2_hat.imag>0) :
-            x2_hat = QPSK_sym_arr[0]
-        elif (x2_hat.real<0) & (x2_hat.imag>0) :
-            x2_hat = QPSK_sym_arr[1]
-        elif (x2_hat.real>0) & (x2_hat.imag<0) :
-            x2_hat = QPSK_sym_arr[2]
-        elif (x2_hat.real<0) & (x2_hat.imag<0) :
-            x2_hat = QPSK_sym_arr[3]
-        y2 = y1 - channel_H_for_ZF_SIC[0, :, min_idx_ZF_SIC2:min_idx_ZF_SIC2 + 1] * x2_hat
-        ####################y2
-
-        channel_H_for_ZF_SIC[0, :, min_idx_ZF_SIC2:min_idx_ZF_SIC2 + 1] = np.zeros(
-            (channel_H_for_ZF_SIC[0, :, min_idx_ZF_SIC2:min_idx_ZF_SIC2 + 1]).shape)
-        H_h__for_ZF_SIC = np.transpose(np.conj(channel_H_for_ZF_SIC[0]))
-        H_h__H__inv_for_ZF_SIC = np.linalg.pinv(np.einsum('bc,cd->bd', H_h__for_ZF_SIC, channel_H_for_ZF_SIC[0]))
-        W_h_ZF_SIC3 = np.einsum('ab,bc->ac', H_h__H__inv_for_ZF_SIC, H_h__for_ZF_SIC)
-
-        SIC_test3 = np.einsum('ij->ji', np.conj(W_h_ZF_SIC3))
-        norm_wi3 = np.einsum('ab,ba->b', SIC_test3, W_h_ZF_SIC3).real
-        norm_wi3[[min_idx_ZF_SIC1,min_idx_ZF_SIC2]] = 0
-        min_idx_ZF_SIC3 = norm_wi2.argsort()[2]
-        x3_hat = np.einsum('ij,ji->i', W_h_ZF_SIC3[min_idx_ZF_SIC3:min_idx_ZF_SIC3 + 1, :], y2)
-
-        if (x3_hat.real > 0) & (x3_hat.imag > 0):
-            x3_hat = QPSK_sym_arr[0]
-        elif (x3_hat.real < 0) & (x3_hat.imag > 0):
-            x3_hat = QPSK_sym_arr[1]
-        elif (x3_hat.real > 0) & (x3_hat.imag < 0):
-            x3_hat = QPSK_sym_arr[2]
-        elif (x3_hat.real < 0) & (x3_hat.imag < 0):
-            x3_hat = QPSK_sym_arr[3]
-        y3 = y2 - channel_H_for_ZF_SIC[0, :, min_idx_ZF_SIC3:min_idx_ZF_SIC3 + 1] * x3_hat
-        ####################y3
+        x_hat = ZF_SIC(inp_class,QPSK_sym_arr)
+        real_arr = x_hat.reshape(-1, 1).real
+        imag_arr = x_hat.reshape(-1, 1).imag
+        inp_class.demodulation_result5[np.where((real_arr > 0) & (imag_arr > 0))[0]] = np.array([0, 0])
+        inp_class.demodulation_result5[np.where((real_arr < 0) & (imag_arr > 0))[0]] = np.array([1, 0])
+        inp_class.demodulation_result5[np.where((real_arr > 0) & (imag_arr < 0))[0]] = np.array([0, 1])
+        inp_class.demodulation_result5[np.where((real_arr < 0) & (imag_arr < 0))[0]] = np.array([1, 1])
+        inp_class.demodulation_result5 = inp_class.demodulation_result5.reshape(
+            inp_class.channel_coding_result_np.shape)
 
     else:
         raise Exception('모듈레이션 scheme 확인필요')
@@ -226,7 +145,7 @@ def make_result_class(inp_file_dir,source_coding_type,channel_coding_type,draw_h
                                     modulation_scheme,fading_scheme, Tx, Rx,
                                     mu,SNR)
 
-    inp_class.channel_coding_result_np = np.random.randint(0,2,(1000,90)) #0과1 랜덤하게 1600개 생성
+    inp_class.channel_coding_result_np = np.random.randint(0,2,(2,Tx*1)) #0과1 랜덤하게 1600개 생성
     modulation(inp_class)
 
     channel_awgn(inp_class)
