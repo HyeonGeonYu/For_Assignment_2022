@@ -1,6 +1,7 @@
 import numpy as np
 from itertools import product
 from ZF_SIC import ZF_SIC
+from MMSE_SIC import MMSE_SIC
 class communicationsystem:
     def __init__(self, ext,inp_data,mapped_data,inp_data_unique_arr, inp_data_unique_arr_idx_arr,count,
                  source_coding_type,channel_coding_type,inp_bit_len = None, draw_huffmantree = False,
@@ -38,6 +39,7 @@ class communicationsystem:
         self.demodulation_result3 = None                                # ZF.
         self.demodulation_result4 = None                                # MMSE
         self.demodulation_result5 = None                                # ZF_SIC
+        self.demodulation_result6 = None                                # MMSE_SIC
         self.channel_H = None                                           # 채널 H
         self.noise_N = None                                             # 노이즈 N
         self.channel_decoding_result_np = None                          # 채널 디코딩 결과.
@@ -134,6 +136,20 @@ def demodulation(inp_class):
         inp_class.demodulation_result5 = inp_class.demodulation_result5.reshape(
             inp_class.channel_coding_result_np.shape)
 
+        ####################MMSE_SIC
+        inp_class.demodulation_result6 = np.zeros_like(inp_class.channel_coding_result_np).reshape(-1, 2)
+        x_hat = MMSE_SIC(inp_class,QPSK_sym_arr)
+        real_arr = x_hat.reshape(-1, 1).real
+        imag_arr = x_hat.reshape(-1, 1).imag
+        inp_class.demodulation_result6[np.where((real_arr > 0) & (imag_arr > 0))[0]] = np.array([0, 0])
+        inp_class.demodulation_result6[np.where((real_arr < 0) & (imag_arr > 0))[0]] = np.array([1, 0])
+        inp_class.demodulation_result6[np.where((real_arr > 0) & (imag_arr < 0))[0]] = np.array([0, 1])
+        inp_class.demodulation_result6[np.where((real_arr < 0) & (imag_arr < 0))[0]] = np.array([1, 1])
+        inp_class.demodulation_result6 = inp_class.demodulation_result6.reshape(
+            inp_class.channel_coding_result_np.shape)
+
+        ####################
+
     else:
         raise Exception('모듈레이션 scheme 확인필요')
 
@@ -145,22 +161,9 @@ def make_result_class(inp_file_dir,source_coding_type,channel_coding_type,draw_h
                                     modulation_scheme,fading_scheme, Tx, Rx,
                                     mu,SNR)
 
-    inp_class.channel_coding_result_np = np.random.randint(0,2,(2,Tx*100000)) #0과1 랜덤하게 1600개 생성
+    inp_class.channel_coding_result_np = np.random.randint(0,2,(2,Tx*100000)) # Tx* (보내고자하는 심볼수)
     modulation(inp_class)
 
     channel_awgn(inp_class)
     demodulation(inp_class)
-
-    ##########테스트용
-    Tx_sym = inp_class.channel_coding_result_np.reshape(-1, 2)  # 보낸 심볼
-    Rx_sym_ML = inp_class.demodulation_result2.reshape(-1, 2)  # ML
-    Rx_sym_ZF = inp_class.demodulation_result3.reshape(-1, 2)  # ZF
-    Rx_sym_MMSE = inp_class.demodulation_result4.reshape(-1, 2)  # MMSE
-    Rx_sym_ZF_SIC = inp_class.demodulation_result5.reshape(-1, 2)  # ZF_SIC
-    num_sym = Tx_sym.shape[0]
-    num_err_ML = num_sym - np.count_nonzero(np.all(Tx_sym == Rx_sym_ML, axis=1))
-    num_err_ZF = num_sym - np.count_nonzero(np.all(Tx_sym == Rx_sym_ZF, axis=1))
-    num_err_MMSE = num_sym - np.count_nonzero(np.all(Tx_sym == Rx_sym_MMSE, axis=1))
-    num_err_ZF_SIC = num_sym - np.count_nonzero(np.all(Tx_sym == Rx_sym_ZF_SIC, axis=1))
-    ##########테스트용
     return inp_class
