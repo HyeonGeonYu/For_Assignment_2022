@@ -3,6 +3,7 @@ from itertools import product
 from ZF_SIC import ZF_SIC
 from MMSE_SIC import MMSE_SIC
 from LR_ZF import LR_ZF
+from SD import SD
 class communicationsystem:
     def __init__(self, ext,inp_data,mapped_data,inp_data_unique_arr, inp_data_unique_arr_idx_arr,count,
                  source_coding_type,channel_coding_type,inp_bit_len = None, draw_huffmantree = False,
@@ -162,6 +163,11 @@ def demodulation(inp_class):
         inp_class.demodulation_result7 = inp_class.demodulation_result7.reshape(
             inp_class.channel_coding_result_np.shape)
 
+        ####################SD
+        inp_class.demodulation_result8 = np.zeros_like(inp_class.channel_coding_result_np).reshape(-1, 2)
+        x_hat = SD(inp_class, QPSK_sym_arr, QPSK_sym_perm,d)
+
+
     else:
         raise Exception('모듈레이션 scheme 확인필요')
 
@@ -173,7 +179,7 @@ def make_result_class(inp_file_dir,source_coding_type,channel_coding_type,draw_h
                                     modulation_scheme,fading_scheme, Tx, Rx,
                                     mu,SNR)
 
-    inp_class.channel_coding_result_np = np.random.randint(0,2,(2,Tx*10000)) # Tx * (전송 횟수)
+    inp_class.channel_coding_result_np = np.random.randint(0,2,(2,Tx*1)) # Tx * (전송 횟수)
     modulation(inp_class)
 
     channel_awgn(inp_class)
