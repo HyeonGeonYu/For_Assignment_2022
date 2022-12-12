@@ -164,6 +164,7 @@ def demodulation(inp_class):
             inp_class.channel_coding_result_np.shape)
 
         ####################SD
+        d = 3
         inp_class.demodulation_result8 = np.zeros_like(inp_class.channel_coding_result_np).reshape(-1, 2)
         x_hat = SD(inp_class, QPSK_sym_arr, QPSK_sym_perm,d)
 

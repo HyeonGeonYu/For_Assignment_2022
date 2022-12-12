@@ -29,7 +29,8 @@ def LR_ZF(inp_class,QPSK_sym_arr,QPSK_sym_perm):
             #z_hat[idx_Trans,idx_Rx] = lattice_z[abs(lattice_z-z_hat[idx_Trans,idx_Rx,0]).argmin()]
             #z_hat[idx_Trans,idx_Rx] = lattice_z[np.linalg.norm(lattice_z-z_hat[idx_Trans,idx_Rx,0],axis=1).argmin()]
             distance = z_hat[idx_Trans, idx_Rx] - u1
-            z_hat[idx_Trans,idx_Rx] = lattice_z[idx1[(np.einsum('a,a->a',np.conj(distance),distance).real).argmin()]]
+            z_hat[idx_Trans,idx_Rx] = lattice_z[idx1[(np.einsum('a,'
+                                                                'a->a',np.conj(distance),distance).real).argmin()]]
 
 
     x_hat = np.einsum('abc,acd->abd', T, z_hat)
