@@ -75,10 +75,11 @@ def SD(inp_class,QPSK_sym_arr,QPSK_sym_perm,d):
         QPSK_sym_arr_mapper = np.array([[0, 0], [1, 0], [0, 1], [1, 1]])
         QPSK_sym_arr_mapper_perm = QPSK_sym_arr_mapper[candidate_perm]
 
-
+        '''
         test = np.einsum('mn,rnd->rmd', channel_H__for_SD[Trans_num_idx], QPSK_candidate_perm)
         test2 =  channel_result__for_SD[Trans_num_idx] - test
         min_idx = np.argmin(np.sqrt(np.einsum('rmn,rmn->r', np.conj(test2), test2).real))
         x_hat[Trans_num_idx] =QPSK_candidate_perm[min_idx]
-
+        
     return x_hat
+        '''

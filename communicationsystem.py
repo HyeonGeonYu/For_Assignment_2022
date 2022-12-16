@@ -4,6 +4,7 @@ from ZF_SIC import ZF_SIC
 from MMSE_SIC import MMSE_SIC
 from LR_ZF import LR_ZF
 from SD import SD
+from SDR import SDR
 class communicationsystem:
     def __init__(self, ext,inp_data,mapped_data,inp_data_unique_arr, inp_data_unique_arr_idx_arr,count,
                  source_coding_type,channel_coding_type,inp_bit_len = None, draw_huffmantree = False,
@@ -44,6 +45,7 @@ class communicationsystem:
         self.demodulation_result6 = None                                # MMSE_SIC
         self.demodulation_result7 = None                                # LR_ZF
         self.demodulation_result8 = None                                # SD
+        self.demodulation_result9 = None                                # SDR
         self.channel_H = None                                           # 채널 H
         self.noise_N = None                                             # 노이즈 N
         self.channel_decoding_result_np = None                          # 채널 디코딩 결과.
@@ -164,12 +166,11 @@ def demodulation(inp_class):
         inp_class.demodulation_result7 = inp_class.demodulation_result7.reshape(
             inp_class.channel_coding_result_np.shape)
 
-        ####################SD
+        ####################SD 아직 작성중
         d = 3
-
         inp_class.demodulation_result8 = np.zeros_like(inp_class.channel_coding_result_np).reshape(-1, 2)
+        '''
         x_hat = SD(inp_class, QPSK_sym_arr, QPSK_sym_perm,d)
-
         real_arr = x_hat.reshape(-1, 1).real
         imag_arr = x_hat.reshape(-1, 1).imag
         inp_class.demodulation_result8[np.where((real_arr > 0) & (imag_arr > 0))[0]] = np.array([0, 0])
@@ -178,6 +179,21 @@ def demodulation(inp_class):
         inp_class.demodulation_result8[np.where((real_arr < 0) & (imag_arr < 0))[0]] = np.array([1, 1])
         inp_class.demodulation_result8 = inp_class.demodulation_result8.reshape(
             inp_class.channel_coding_result_np.shape)
+        '''
+
+        ####################SDR
+        inp_class.demodulation_result9 = np.zeros_like(inp_class.channel_coding_result_np).reshape(-1, 2)
+        x_hat = SDR(inp_class, QPSK_sym_arr)
+
+        real_arr = x_hat.reshape(-1, 1).real
+        imag_arr = x_hat.reshape(-1, 1).imag
+        inp_class.demodulation_result9[np.where((real_arr > 0) & (imag_arr > 0))[0]] = np.array([0, 0])
+        inp_class.demodulation_result9[np.where((real_arr < 0) & (imag_arr > 0))[0]] = np.array([1, 0])
+        inp_class.demodulation_result9[np.where((real_arr > 0) & (imag_arr < 0))[0]] = np.array([0, 1])
+        inp_class.demodulation_result9[np.where((real_arr < 0) & (imag_arr < 0))[0]] = np.array([1, 1])
+        inp_class.demodulation_result9 = inp_class.demodulation_result9.reshape(
+            inp_class.channel_coding_result_np.shape)
+
 
 
     else:
@@ -191,7 +207,7 @@ def make_result_class(inp_file_dir,source_coding_type,channel_coding_type,draw_h
                                     modulation_scheme,fading_scheme, Tx, Rx,
                                     mu,SNR)
 
-    inp_class.channel_coding_result_np = np.random.randint(0,2,(2,Tx*1)) # Tx * (전송 횟수)
+    inp_class.channel_coding_result_np = np.random.randint(0,2,(2,Tx*10000)) # Tx * (전송 횟수)
     modulation(inp_class)
 
     channel_awgn(inp_class)
