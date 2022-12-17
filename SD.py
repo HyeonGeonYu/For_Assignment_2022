@@ -3,77 +3,67 @@ def SD(inp_class,QPSK_sym_arr,QPSK_sym_perm,d):
     channel_H__for_SD = np.copy(inp_class.channel_H)
     channel_result__for_SD = np.copy(inp_class.channel_result)
     Trans_num = channel_H__for_SD.shape[0]
+    result_x = np.zeros_like(inp_class.channel_result)
 
-    Q,R = np.linalg.qr(channel_H__for_SD)
-    R_inv = np.linalg.inv(R)
-    Q_hermitian = np.einsum('ijk->ikj', np.conj(Q))
-
-    x_hat = np.einsum('ijk,ikl,ilm->ijm', R_inv,Q_hermitian,channel_result__for_SD)
-    idx_list = []
     for Trans_num_idx in range(Trans_num):
-        for Tx_idx in np.flip(range(inp_class.Tx)):
-            if (Tx_idx == (inp_class.Tx-1)):
-                x_hat_k_k1 = x_hat[Trans_num_idx,Tx_idx]
-                distance = R[Trans_num_idx][Tx_idx][Tx_idx]*(QPSK_sym_arr-x_hat_k_k1)
-                distance_square = (distance * np.conj(distance)).real
-                idx_arr = np.where(distance_square<d**2)[0]
-                if idx_arr.size == 0:
-                    idx_arr = np.where(distance_square == np.min(distance_square))
-                    idx_list.append((idx_arr[0]))
-                    distance_square = distance_square[idx_arr]
-                    d = np.sqrt(d ** 2 + np.min(distance_square))
-                else:
-                    idx_list.append((idx_arr,))
-                    distance_square = distance_square[idx_arr]
-                    d = np.sqrt(d ** 2 - np.min(distance_square))
+        channel_H__for_SD[Trans_num_idx]
 
-            else :
-                summation_for_x_hat_k_k1 = np.zeros((1),dtype='complex')
-                for idx_for_cal in range (Tx_idx+1,inp_class.Tx):
-                    if (inp_class.Tx-Tx_idx-1) == 1:
-                        test_arr = QPSK_sym_arr[idx_list[inp_class.Tx - 2 - Tx_idx][inp_class.Tx - 1 - idx_for_cal]]
-                        summation_for_x_hat_k_k1 = summation_for_x_hat_k_k1 + R[Trans_num_idx, Tx_idx, idx_for_cal]/ R [Trans_num_idx, Tx_idx, Tx_idx] * (test_arr - x_hat[Trans_num_idx,idx_for_cal])
-                    elif (inp_class.Tx-Tx_idx-1) == 2:
-                        if (idx_for_cal == (Tx_idx+1)):
-                            test_arr = QPSK_sym_arr[idx_list[inp_class.Tx - 2 - Tx_idx][1]]
-                        elif (idx_for_cal == (Tx_idx+2)) :
-                            test_arr = QPSK_sym_arr[idx_list[inp_class.Tx - 2 - Tx_idx][0]]
-                        summation_for_x_hat_k_k1 = summation_for_x_hat_k_k1 + R[Trans_num_idx, Tx_idx, idx_for_cal] / R[
-                            Trans_num_idx, Tx_idx, Tx_idx] * (test_arr - x_hat[Trans_num_idx, idx_for_cal])
-                    elif (inp_class.Tx - Tx_idx - 1) == 3:
-                        if (idx_for_cal == (Tx_idx+1)):
-                            test_arr = QPSK_sym_arr[idx_list[inp_class.Tx - 2 - Tx_idx][1]]
-                        elif (idx_for_cal == (Tx_idx+2)) :
-                            test_arr = QPSK_sym_arr[idx_list[1][1] [idx_list[2][0]]]
-                        elif (idx_for_cal == (Tx_idx+3)) :
-                            test_arr = QPSK_sym_arr[idx_list[1][0] [idx_list[2][0]]]
-                        summation_for_x_hat_k_k1 = summation_for_x_hat_k_k1 + R[Trans_num_idx, Tx_idx, idx_for_cal] / R[
-                            Trans_num_idx, Tx_idx, Tx_idx] * (test_arr - x_hat[Trans_num_idx, idx_for_cal])
-                x_hat_k_k1 = x_hat[Trans_num_idx, Tx_idx] - summation_for_x_hat_k_k1
-                x_hat_k_k1 = x_hat_k_k1.reshape(-1,1,1)
-                distance = R[Trans_num_idx][Tx_idx][Tx_idx] * (QPSK_sym_arr - x_hat_k_k1)
-                #QPSK_sym_arr[1]-x_hat_k_k1[0] == (QPSK_sym_arr - x_hat_k_k1)[0,1]
-                distance_square = (distance * np.conj(distance)).real
-                idx_arr = np.where(distance_square < d ** 2)
-                if idx_arr[0].size == 0 :
-                    idx_arr = np.where(distance_square == np.min(distance_square))
-                    idx_list.append((idx_arr[0],idx_arr[1]))
-                    distance_square = distance_square[idx_arr]
-                    d = np.sqrt(d ** 2 + np.min(distance_square))
-                else:
-                    idx_list.append((idx_arr[0],idx_arr[1]))
-                    distance_square = distance_square[idx_arr]
-                    d = np.sqrt(d ** 2 - np.min(distance_square))
 
-        list1 = idx_list[3][1].reshape(-1,1) #00이 쏜거
-        list2 = idx_list[2][1][idx_list[3][0]].reshape(-1,1) #11이 쏜거
-        list3 = idx_list[1][1][idx_list[2][0][idx_list[3][0]]].reshape(-1,1) #22이 쏜거
-        list4 = idx_list[2][1][idx_list[1][0][idx_list[2][0][idx_list[3][0]]]].reshape(-1,1) #33이 쏜거
-        candidate_perm = np.hstack([list1, list2,list3,list4])
-        QPSK_candidate_perm = QPSK_sym_arr[candidate_perm]
-        np.array([list1,list2,list3,list4])
-        QPSK_sym_arr_mapper = np.array([[0, 0], [1, 0], [0, 1], [1, 1]])
-        QPSK_sym_arr_mapper_perm = QPSK_sym_arr_mapper[candidate_perm]
+        H_Re_Im = np.vstack((np.hstack((channel_H__for_SD[Trans_num_idx].real, -channel_H__for_SD[Trans_num_idx].imag)),
+                             np.hstack((channel_H__for_SD[Trans_num_idx].imag, channel_H__for_SD[Trans_num_idx].real))))
+
+        y_Re_Im = np.vstack(
+            (channel_result__for_SD[Trans_num_idx].real, channel_result__for_SD[Trans_num_idx].imag)) / np.sqrt(
+            inp_class.rootpower_of_symbol ** 2 / 2)  # 보낸 sym을 +-1, +-1j 로 normalization
+        x = np.zeros((2*inp_class.Tx,1))
+        Q, R = np.linalg.qr(H_Re_Im)
+        x_hat = np.dot(np.linalg.pinv(H_Re_Im),y_Re_Im)
+        result_x_Re_Im = np.zeros_like(x_hat)
+        up_bound_arr = np.zeros_like(x_hat)
+        d_square_arr = np.zeros_like(x_hat)
+        r_ii_x_hat_k_bar_k1_arr = np.zeros_like(x_hat)
+        case_number =1
+
+        while True:
+            if case_number == 1:
+                k = 2*inp_class.Tx
+                d_square_arr[k-1] = d**2- np.linalg.norm(np.transpose(Q[:,2*inp_class.Tx:]))**2
+                r_ii_x_hat_k_bar_k1_arr[k-1] = x_hat[inp_class.Tx*2-1]
+                case_number = 2
+            elif case_number == 2:
+                tmp = np.array(((-np.sqrt(d_square_arr[k-1])+r_ii_x_hat_k_bar_k1_arr[k-1])/R[k-1,k-1] ,
+                       (np.sqrt(d_square_arr[k-1])+r_ii_x_hat_k_bar_k1_arr[k-1])/R[k-1,k-1]))
+                tmp = np.sort(tmp,axis=0)
+                up_bound_arr[k-1] = 1-2*(tmp[1]<1)
+                low_bound = 1-2*(tmp[0]<-1)
+                x[k-1] = low_bound-1
+                case_number = 3
+            elif case_number ==3:
+                x[k-1] = x[k-1]+1
+                if x[k-1]<= up_bound_arr[k-1]:
+                    case_number = 5
+                else:
+                    case_number = 4
+            elif case_number == 4:
+                k = k+1
+                if k == 2*inp_class.Tx+1:
+                    break
+                else:
+                    case_number = 3
+            elif case_number == 5:
+                if k == 1:
+                    case_number = 6
+                else:
+                    k = k-1
+                    d_square_arr[k-1]= d_square_arr[k] - (r_ii_x_hat_k_bar_k1_arr[k]-R[k,k] * x[k])**2
+                    if d_square_arr[k-1]<0:
+                        pass
+                    r_ii_x_hat_k_bar_k1_arr[k-1] = x_hat[k-1] - np.dot(R[k-1,k:2*inp_class.Tx],x[k:])
+                    case_number = 2
+            elif case_number == 6:
+                result_x_Re_Im = x
+                case_number = 3
+        result_x_Re_Im
 
         '''
         test = np.einsum('mn,rnd->rmd', channel_H__for_SD[Trans_num_idx], QPSK_candidate_perm)

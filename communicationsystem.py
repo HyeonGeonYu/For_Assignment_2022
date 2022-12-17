@@ -169,7 +169,7 @@ def demodulation(inp_class):
         ####################SD 아직 작성중
         d = 3
         inp_class.demodulation_result8 = np.zeros_like(inp_class.channel_coding_result_np).reshape(-1, 2)
-        '''
+
         x_hat = SD(inp_class, QPSK_sym_arr, QPSK_sym_perm,d)
         real_arr = x_hat.reshape(-1, 1).real
         imag_arr = x_hat.reshape(-1, 1).imag
@@ -179,7 +179,7 @@ def demodulation(inp_class):
         inp_class.demodulation_result8[np.where((real_arr < 0) & (imag_arr < 0))[0]] = np.array([1, 1])
         inp_class.demodulation_result8 = inp_class.demodulation_result8.reshape(
             inp_class.channel_coding_result_np.shape)
-        '''
+
 
         ####################SDR
         inp_class.demodulation_result9 = np.zeros_like(inp_class.channel_coding_result_np).reshape(-1, 2)
@@ -207,7 +207,7 @@ def make_result_class(inp_file_dir,source_coding_type,channel_coding_type,draw_h
                                     modulation_scheme,fading_scheme, Tx, Rx,
                                     mu,SNR)
 
-    inp_class.channel_coding_result_np = np.random.randint(0,2,(2,Tx*10000)) # Tx * (전송 횟수)
+    inp_class.channel_coding_result_np = np.random.randint(0,2,(2,Tx*10)) # Tx * (전송 횟수)
     modulation(inp_class)
 
     channel_awgn(inp_class)
