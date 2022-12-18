@@ -35,15 +35,16 @@ def SD(inp_class,d):
         #r_ii_x_hat_k_bar_k1_arr = np.zeros_like(R__x_hat)
         case_number =1
         result_x_Re_Im = np.copy(x_hat)
-
+        x_list = []
+        distance_list = []
         while (True):
             if case_number == 1:
                 k = 2*inp_class.Tx
                 if inp_class.Rx>inp_class.Tx:
-                    d_square_arr[k-1] = d**2- np.linalg.norm(np.dot(np.linalg.pinv(np.transpose(R))[:,2*inp_class.Tx:],y_normalized_Re_Im))**2
+                    d_square_arr[k-1] = d**2 - np.linalg.norm(np.dot(np.linalg.pinv(np.transpose(R))[:,2*inp_class.Tx:],y_normalized_Re_Im))**2
                 else:
                     d_square_arr[k - 1] = d ** 2
-                    tmp_distance = d**2
+                    max_distance = -np.inf
                 x_hat_k_bar_k1_arr[k-1] = x_hat[inp_class.Tx*2-1]
                 case_number = 2
             elif case_number == 2:
@@ -80,10 +81,16 @@ def SD(inp_class,d):
                     case_number = 2
             elif case_number == 6:
             ###아래 5줄 디버깅 해야함.
-                if (np.abs(d_square_arr[0][0])<np.abs(tmp_distance)):
-                    tmp_distance = d_square_arr[0][0]
+                tmp_distance = (d_square_arr[0][0] - (R[k-1, k-1] * (x[k-1] - x_hat_k_bar_k1_arr[k-1])) ** 2)[0]
+                if (tmp_distance)>=(max_distance):
+                    max_distance = tmp_distance
                     result_x_Re_Im = np.copy(x)
+                    x_list.append(np.copy(result_x_Re_Im))
+                    distance_list.append(max_distance)
                 case_number = 3
 
+        test_1 = np.where(x_hat>0,1,-1)
+        R_inv_distance = 9-np.linalg.norm(np.dot(R,(test_1-x_hat)))**2
+        result_distance = 9-np.linalg.norm(np.dot(R,(result_x_Re_Im-x_hat)))**2
         result_x[Trans_num_idx] = result_x_Re_Im[0:inp_class.Tx,:]+1j*result_x_Re_Im[inp_class.Tx:,:]
     return result_x

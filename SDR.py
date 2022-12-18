@@ -16,6 +16,7 @@ def SDR(inp_class,QPSK_sym_arr):
         X = cvx.Variable((inp_class.Tx * 2+1,inp_class.Tx * 2+1))
         objective_func = cvx.Minimize(cvx.trace(L @ X))
         constaints = [cvx.diag(X)==1,cvx.constraints.psd.PSD(X)]
+
         prob = cvx.Problem(objective_func,constaints)
         prob.solve()
         val,vec = np.linalg.eig(X.value)
