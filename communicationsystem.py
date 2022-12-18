@@ -204,7 +204,7 @@ def make_result_class(inp_file_dir,source_coding_type,channel_coding_type,draw_h
                                     modulation_scheme,fading_scheme, Tx, Rx,
                                     mu,SNR)
 
-    inp_class.channel_coding_result_np = np.random.randint(0,2,(2,Tx*1000)) # Tx * (전송 횟수)
+    inp_class.channel_coding_result_np = np.random.randint(0,2,(2,Tx*100000)) # Tx * (전송 횟수)
     modulation(inp_class)
 
     channel_awgn(inp_class)
