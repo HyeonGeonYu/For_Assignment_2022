@@ -18,16 +18,13 @@ def LR_ZF(inp_class,QPSK_sym_arr,QPSK_sym_perm):
     tol = 1e-10
     for idx_Trans in range(Trans_num):
         for idx_Rx in range(inp_class.Rx):
-            #np.nonzero(T_inv[idx_Trans][idx_Rx:idx_Rx + 1, :])[1]
-            #QPSK_sym_arr
 
             lattice_z = np.einsum('ab,ibc->iac', T_inv[idx_Trans][idx_Rx:idx_Rx+1, :], QPSK_sym_perm)
             u1,idx1 = np.unique(lattice_z,return_index=True)
             #z_hat[idx_Trans,idx_Rx] = lattice_z[abs(lattice_z-z_hat[idx_Trans,idx_Rx,0]).argmin()]
             #z_hat[idx_Trans,idx_Rx] = lattice_z[np.linalg.norm(lattice_z-z_hat[idx_Trans,idx_Rx,0],axis=1).argmin()]
             distance = z_hat[idx_Trans, idx_Rx] - u1
-            z_hat[idx_Trans,idx_Rx] = lattice_z[idx1[(np.einsum('a,'
-                                                                'a->a',np.conj(distance),distance).real).argmin()]]
+            z_hat[idx_Trans,idx_Rx] = lattice_z[idx1[(np.einsum('a,a->a',np.conj(distance),distance).real).argmin()]]
 
 
     x_hat = np.einsum('abc,acd->abd', T, z_hat)

@@ -1,5 +1,8 @@
 import numpy as np
 from itertools import product
+from ML import ML
+from ZF import ZF
+from MMSE import MMSE
 from ZF_SIC import ZF_SIC
 from MMSE_SIC import MMSE_SIC
 from LR_ZF import LR_ZF
@@ -76,122 +79,59 @@ def channel_awgn(inp_class):
             for i in range(Trans_num):
                 inp_class.channel_result[i] = np.dot(inp_class.channel_H[i],reshape_mod_result[i]) + inp_class.noise_N[i]
 def demodulation(inp_class):
+    def sym2bit(inp_class,x_hat):
+        demodulation_result = np.zeros_like(inp_class.channel_coding_result_np).reshape(-1, 2)
+        real_arr = x_hat.reshape(-1, 1).real
+        imag_arr = x_hat.reshape(-1, 1).imag
+        demodulation_result[np.where((real_arr > 0) & (imag_arr > 0))[0]] = np.array([0, 0])
+        demodulation_result[np.where((real_arr < 0) & (imag_arr > 0))[0]] = np.array([1, 0])
+        demodulation_result[np.where((real_arr > 0) & (imag_arr < 0))[0]] = np.array([0, 1])
+        demodulation_result[np.where((real_arr < 0) & (imag_arr < 0))[0]] = np.array([1, 1])
+        demodulation_result = demodulation_result.reshape(inp_class.channel_coding_result_np.shape)
+        return demodulation_result
+
     if inp_class.modulation_scheme == "QPSK":
+        QPSK_sym_arr = inp_class.rootpower_of_symbol * np.array(
+            [[(1 + 1j) / np.sqrt(2)], [(-1 + 1j) / np.sqrt(2)], [(1 - 1j) / np.sqrt(2)], [(-1 - 1j) / np.sqrt(2)]],
+            dtype='complex')
+        QPSK_sym_arr_mapper = np.array([[0, 0], [1, 0], [0, 1], [1, 1]])
+        QPSK_sym_perm = np.array([p for p in product(QPSK_sym_arr, repeat=inp_class.Tx)], dtype='complex')
+        QPSK_sym_perm = QPSK_sym_perm.reshape(-1, inp_class.Tx, 1)
+        #QPSK_sym_perm_mapper = np.array([p for p in product(QPSK_sym_arr_mapper, repeat=inp_class.Tx)], dtype='int32')
+        #QPSK_sym_perm_mapper = QPSK_sym_perm_mapper.reshape(-1, inp_class.Tx, 2)
+
         ####################ML
-        inp_class.demodulation_result2 = np.zeros_like(inp_class.channel_coding_result_np).reshape(-1, 2)
-        QPSK_sym_arr = inp_class.rootpower_of_symbol*np.array([[(1+1j)/np.sqrt(2)],[(-1+1j)/np.sqrt(2)],[(1-1j)/np.sqrt(2)],[(-1-1j)/np.sqrt(2)]],dtype='complex')
-        QPSK_sym_arr_mapper = np.array([[0,0],[1,0],[0,1],[1,1]])
-        QPSK_sym_perm = np.array([p for p in product(QPSK_sym_arr, repeat=inp_class.Tx)],dtype='complex')
-        QPSK_sym_perm = QPSK_sym_perm.reshape(-1,inp_class.Tx,1)
-        QPSK_sym_perm_mapper = np.array([p for p in product(QPSK_sym_arr_mapper, repeat=inp_class.Tx)],dtype='int32')
-        QPSK_sym_perm_mapper = QPSK_sym_perm_mapper.reshape(-1,inp_class.Tx,2)
-
-        i_num = inp_class.channel_H.shape[0]
-        k_num = QPSK_sym_perm.shape[0]
-
-        for i in range(i_num) :
-            test = np.einsum('mn,rnd->rmd', inp_class.channel_H[i], QPSK_sym_perm)
-            test2 = inp_class.channel_result[i] - test
-            min_idx = np.argmin(np.sqrt(np.einsum('rmn,rmn->r', np.conj(test2), test2).real))
-            inp_class.demodulation_result2[i*inp_class.Tx:i*inp_class.Tx+inp_class.Tx] = QPSK_sym_perm_mapper[min_idx]
-        #print("걸린시간 : ", time.time() - a)
-        ######
+        x_hat = ML(inp_class, QPSK_sym_perm)
+        inp_class.demodulation_result2 = sym2bit(inp_class,x_hat)
 
         ####################ZF
-        inp_class.demodulation_result3 = np.zeros_like(inp_class.channel_coding_result_np).reshape(-1, 2)
-        channel_H_hermitian = np.einsum('ijk->ikj', np.conj(inp_class.channel_H))
-        H_h__H__inv = np.linalg.inv(np.einsum('abc,acd->abd', channel_H_hermitian,inp_class.channel_H))
-        W_h_ZF = np.einsum('abc,acd->abd', H_h__H__inv,channel_H_hermitian)
-
-        x_hat = np.einsum('abc,acd->abd', W_h_ZF,inp_class.channel_result)
-        real_arr = x_hat.reshape(-1, 1).real
-        imag_arr = x_hat.reshape(-1, 1).imag
-        inp_class.demodulation_result3[np.where((real_arr > 0) & (imag_arr > 0))[0]] = np.array([0, 0])
-        inp_class.demodulation_result3[np.where((real_arr < 0) & (imag_arr > 0))[0]] = np.array([1, 0])
-        inp_class.demodulation_result3[np.where((real_arr > 0) & (imag_arr < 0))[0]] = np.array([0, 1])
-        inp_class.demodulation_result3[np.where((real_arr < 0) & (imag_arr < 0))[0]] = np.array([1, 1])
-        inp_class.demodulation_result3 = inp_class.demodulation_result3.reshape(
-            inp_class.channel_coding_result_np.shape)
-        ######
+        x_hat = ZF(inp_class)
+        inp_class.demodulation_result3 = sym2bit(inp_class,x_hat)
 
         ####################MMSE
-        inp_class.demodulation_result4 = np.zeros_like(inp_class.channel_coding_result_np).reshape(-1, 2)
-        H_h__H = np.einsum('abc,acd->abd', channel_H_hermitian, inp_class.channel_H)
-        H_h__H__N0PNt__inv = np.linalg.inv(H_h__H + inp_class.N0/(inp_class.rootpower_of_symbol**2)*np.eye(inp_class.Tx))
-        W_h_MMSE = np.einsum('abc,acd->abd', H_h__H__N0PNt__inv, channel_H_hermitian)
-        x_hat = np.einsum('abc,acd->abd', W_h_MMSE, inp_class.channel_result)
-        real_arr = x_hat.reshape(-1, 1).real
-        imag_arr = x_hat.reshape(-1, 1).imag
-        inp_class.demodulation_result4[np.where((real_arr > 0) & (imag_arr > 0))[0]] = np.array([0, 0])
-        inp_class.demodulation_result4[np.where((real_arr < 0) & (imag_arr > 0))[0]] = np.array([1, 0])
-        inp_class.demodulation_result4[np.where((real_arr > 0) & (imag_arr < 0))[0]] = np.array([0, 1])
-        inp_class.demodulation_result4[np.where((real_arr < 0) & (imag_arr < 0))[0]] = np.array([1, 1])
-        inp_class.demodulation_result4 = inp_class.demodulation_result4.reshape(
-            inp_class.channel_coding_result_np.shape)
-        #####
+        x_hat = MMSE(inp_class)
+        inp_class.demodulation_result4 = sym2bit(inp_class,x_hat)
 
         ####################ZF_SIC
-        inp_class.demodulation_result5 = np.zeros_like(inp_class.channel_coding_result_np).reshape(-1, 2)
         x_hat = ZF_SIC(inp_class,QPSK_sym_arr)
-        real_arr = x_hat.reshape(-1, 1).real
-        imag_arr = x_hat.reshape(-1, 1).imag
-        inp_class.demodulation_result5[np.where((real_arr > 0) & (imag_arr > 0))[0]] = np.array([0, 0])
-        inp_class.demodulation_result5[np.where((real_arr < 0) & (imag_arr > 0))[0]] = np.array([1, 0])
-        inp_class.demodulation_result5[np.where((real_arr > 0) & (imag_arr < 0))[0]] = np.array([0, 1])
-        inp_class.demodulation_result5[np.where((real_arr < 0) & (imag_arr < 0))[0]] = np.array([1, 1])
-        inp_class.demodulation_result5 = inp_class.demodulation_result5.reshape(
-            inp_class.channel_coding_result_np.shape)
+        inp_class.demodulation_result5 = sym2bit(inp_class, x_hat)
 
         ####################MMSE_SIC
-        inp_class.demodulation_result6 = np.zeros_like(inp_class.channel_coding_result_np).reshape(-1, 2)
         x_hat = MMSE_SIC(inp_class,QPSK_sym_arr)
-        real_arr = x_hat.reshape(-1, 1).real
-        imag_arr = x_hat.reshape(-1, 1).imag
-        inp_class.demodulation_result6[np.where((real_arr > 0) & (imag_arr > 0))[0]] = np.array([0, 0])
-        inp_class.demodulation_result6[np.where((real_arr < 0) & (imag_arr > 0))[0]] = np.array([1, 0])
-        inp_class.demodulation_result6[np.where((real_arr > 0) & (imag_arr < 0))[0]] = np.array([0, 1])
-        inp_class.demodulation_result6[np.where((real_arr < 0) & (imag_arr < 0))[0]] = np.array([1, 1])
-        inp_class.demodulation_result6 = inp_class.demodulation_result6.reshape(
-            inp_class.channel_coding_result_np.shape)
+        inp_class.demodulation_result6 = sym2bit(inp_class, x_hat)
 
         ####################LR_ZF
-        inp_class.demodulation_result7 = np.zeros_like(inp_class.channel_coding_result_np).reshape(-1, 2)
         x_hat = LR_ZF(inp_class,QPSK_sym_arr,QPSK_sym_perm)
-        real_arr = x_hat.reshape(-1, 1).real
-        imag_arr = x_hat.reshape(-1, 1).imag
-        inp_class.demodulation_result7[np.where((real_arr > 0) & (imag_arr > 0))[0]] = np.array([0, 0])
-        inp_class.demodulation_result7[np.where((real_arr < 0) & (imag_arr > 0))[0]] = np.array([1, 0])
-        inp_class.demodulation_result7[np.where((real_arr > 0) & (imag_arr < 0))[0]] = np.array([0, 1])
-        inp_class.demodulation_result7[np.where((real_arr < 0) & (imag_arr < 0))[0]] = np.array([1, 1])
-        inp_class.demodulation_result7 = inp_class.demodulation_result7.reshape(
-            inp_class.channel_coding_result_np.shape)
+        inp_class.demodulation_result7 = sym2bit(inp_class,x_hat)
 
         ####################SD
         d = 3
-        inp_class.demodulation_result8 = np.zeros_like(inp_class.channel_coding_result_np).reshape(-1, 2)
         x_hat = SD(inp_class, d)
-        real_arr = x_hat.reshape(-1, 1).real
-        imag_arr = x_hat.reshape(-1, 1).imag
-        inp_class.demodulation_result8[np.where((real_arr > 0) & (imag_arr > 0))[0]] = np.array([0, 0])
-        inp_class.demodulation_result8[np.where((real_arr < 0) & (imag_arr > 0))[0]] = np.array([1, 0])
-        inp_class.demodulation_result8[np.where((real_arr > 0) & (imag_arr < 0))[0]] = np.array([0, 1])
-        inp_class.demodulation_result8[np.where((real_arr < 0) & (imag_arr < 0))[0]] = np.array([1, 1])
-        inp_class.demodulation_result8 = inp_class.demodulation_result8.reshape(
-            inp_class.channel_coding_result_np.shape)
+        inp_class.demodulation_result8 = sym2bit(inp_class, x_hat)
 
         ####################SDR
-        inp_class.demodulation_result9 = np.zeros_like(inp_class.channel_coding_result_np).reshape(-1, 2)
         x_hat = SDR(inp_class, QPSK_sym_arr)
-        real_arr = x_hat.reshape(-1, 1).real
-        imag_arr = x_hat.reshape(-1, 1).imag
-        inp_class.demodulation_result9[np.where((real_arr > 0) & (imag_arr > 0))[0]] = np.array([0, 0])
-        inp_class.demodulation_result9[np.where((real_arr < 0) & (imag_arr > 0))[0]] = np.array([1, 0])
-        inp_class.demodulation_result9[np.where((real_arr > 0) & (imag_arr < 0))[0]] = np.array([0, 1])
-        inp_class.demodulation_result9[np.where((real_arr < 0) & (imag_arr < 0))[0]] = np.array([1, 1])
-        inp_class.demodulation_result9 = inp_class.demodulation_result9.reshape(
-            inp_class.channel_coding_result_np.shape)
-
-
+        inp_class.demodulation_result9 = sym2bit(inp_class, x_hat)
 
     else:
         raise Exception('모듈레이션 scheme 확인필요')
@@ -204,7 +144,7 @@ def make_result_class(inp_file_dir,source_coding_type,channel_coding_type,draw_h
                                     modulation_scheme,fading_scheme, Tx, Rx,
                                     mu,SNR)
 
-    inp_class.channel_coding_result_np = np.random.randint(0,2,(2,Tx*100000)) # Tx * (전송 횟수)
+    inp_class.channel_coding_result_np = np.random.randint(0,2,(2,Tx*100)) # Tx * (전송 횟수)
     modulation(inp_class)
 
     channel_awgn(inp_class)
