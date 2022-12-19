@@ -130,7 +130,7 @@ def demodulation(inp_class):
         inp_class.demodulation_result8 = sym2bit(inp_class, x_hat)
 
         ####################SDR
-        x_hat = SDR(inp_class, QPSK_sym_arr)
+        x_hat = SDR(inp_class)
         inp_class.demodulation_result9 = sym2bit(inp_class, x_hat)
 
     else:

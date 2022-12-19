@@ -15,15 +15,20 @@ def ZF_SIC(inp_class,QPSK_sym_arr):
         min_idx_ZF_SIC_n = norm_wi_n.argsort()[:,iter_Tx_num]
         x_n_hat = np.zeros((num_n,1),dtype='complex')
         for iter_idx in range(num_n):
-            x_n_hat[iter_idx] = np.einsum('b,bc->c',W_h_ZF_for_ZF_SIC[iter_idx][min_idx_ZF_SIC_n[iter_idx],:],channel_result_for_ZF_SIC[iter_idx])
+            x_n_hat[iter_idx] = np.einsum('b,bc->c',W_h_ZF_for_ZF_SIC[iter_idx][min_idx_ZF_SIC_n[iter_idx],:],
+                                          channel_result_for_ZF_SIC[iter_idx])
         x_n_hat[np.where((x_n_hat.real>0)&(x_n_hat.imag>0))[0]] = QPSK_sym_arr[0]
         x_n_hat[np.where((x_n_hat.real<0)&(x_n_hat.imag>0))[0]] = QPSK_sym_arr[1]
         x_n_hat[np.where((x_n_hat.real>0)&(x_n_hat.imag<0))[0]] = QPSK_sym_arr[2]
         x_n_hat[np.where((x_n_hat.real<0)&(x_n_hat.imag<0))[0]] = QPSK_sym_arr[3]
 
         for iter_idx in range(num_n):
-            channel_result_for_ZF_SIC[iter_idx] = channel_result_for_ZF_SIC[iter_idx]-channel_H_for_ZF_SIC[iter_idx,:,min_idx_ZF_SIC_n[iter_idx]:min_idx_ZF_SIC_n[iter_idx]+1]*x_n_hat[iter_idx]
-            channel_H_for_ZF_SIC[iter_idx,:,min_idx_ZF_SIC_n[iter_idx]:min_idx_ZF_SIC_n[iter_idx]+1] = np.zeros((inp_class.Rx,1))
+            channel_result_for_ZF_SIC[iter_idx] = channel_result_for_ZF_SIC[iter_idx]\
+                                                  -channel_H_for_ZF_SIC[iter_idx,:,
+                                                   min_idx_ZF_SIC_n[iter_idx]:min_idx_ZF_SIC_n[iter_idx]+1]\
+                                                  *x_n_hat[iter_idx]
+            channel_H_for_ZF_SIC[iter_idx,:,min_idx_ZF_SIC_n[iter_idx]:min_idx_ZF_SIC_n[iter_idx]+1]\
+                = np.zeros((inp_class.Rx,1))
         x_hat_arr = np.hstack((x_hat_arr,x_n_hat))
         min_idx_ZF_SIC_arr = np.vstack((min_idx_ZF_SIC_arr,min_idx_ZF_SIC_n))
 

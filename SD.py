@@ -41,7 +41,8 @@ def SD(inp_class,d):
             if case_number == 1:
                 k = 2*inp_class.Tx
                 if inp_class.Rx>inp_class.Tx:
-                    d_square_arr[k-1] = d**2 - np.linalg.norm(np.dot(np.linalg.pinv(np.transpose(R))[:,2*inp_class.Tx:],y_normalized_Re_Im))**2
+                    d_square_arr[k-1] = d**2 - np.linalg.norm(np.dot(np.linalg.pinv(np.transpose(R))[:,2*inp_class.Tx:],
+                                                                     y_normalized_Re_Im))**2
                 else:
                     d_square_arr[k - 1] = d ** 2
                     max_distance = -np.inf

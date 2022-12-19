@@ -21,21 +21,28 @@ def MMSE_SIC(inp_class,QPSK_sym_arr):
         W_h_MMSE_SIC__H = np.einsum('abc,acd->abd', W_h_MMSE_SIC, channel_H_for_MMSE_SIC)
         W_h_MMSE_SIC__H__h = np.einsum('aij->aji', np.conj(W_h_MMSE_SIC__H))
         norm_wii_h_MMSE_SIC__hii__h = np.einsum('caa,caa->ca', W_h_MMSE_SIC__H__h, W_h_MMSE_SIC__H).real
-        interference_noise_i = np.einsum('cab,cba->cb', W_h_MMSE_SIC__H__h, W_h_MMSE_SIC__H).real - norm_wii_h_MMSE_SIC__hii__h + norm_wi_np0
-        SINR_i = np.divide(norm_wii_h_MMSE_SIC__hii__h,interference_noise_i,out=np.zeros_like(norm_wii_h_MMSE_SIC__hii__h), where=interference_noise_i != 0)
+        interference_noise_i = np.einsum('cab,cba->cb', W_h_MMSE_SIC__H__h, W_h_MMSE_SIC__H).real\
+                               - norm_wii_h_MMSE_SIC__hii__h + norm_wi_np0
+        SINR_i = np.divide(norm_wii_h_MMSE_SIC__hii__h,interference_noise_i,
+                           out=np.zeros_like(norm_wii_h_MMSE_SIC__hii__h), where=interference_noise_i != 0)
 
         max_idx_MMSE_SIC_n = SINR_i.argmax(axis=1)
         x_n_hat = np.zeros((num_n, 1), dtype='complex')
         for iter_idx in range(num_n):
-            x_n_hat[iter_idx] = np.einsum('b,bc->c',W_h_MMSE_SIC[iter_idx][max_idx_MMSE_SIC_n[iter_idx],:],channel_result_for_MMSE_SIC[iter_idx])
+            x_n_hat[iter_idx] = np.einsum('b,bc->c',W_h_MMSE_SIC[iter_idx][max_idx_MMSE_SIC_n[iter_idx],:],
+                                          channel_result_for_MMSE_SIC[iter_idx])
         x_n_hat[np.where((x_n_hat.real>0)&(x_n_hat.imag>0))[0]] = QPSK_sym_arr[0]
         x_n_hat[np.where((x_n_hat.real<0)&(x_n_hat.imag>0))[0]] = QPSK_sym_arr[1]
         x_n_hat[np.where((x_n_hat.real>0)&(x_n_hat.imag<0))[0]] = QPSK_sym_arr[2]
         x_n_hat[np.where((x_n_hat.real<0)&(x_n_hat.imag<0))[0]] = QPSK_sym_arr[3]
 
         for iter_idx in range(num_n):
-            channel_result_for_MMSE_SIC[iter_idx] = channel_result_for_MMSE_SIC[iter_idx]-channel_H_for_MMSE_SIC[iter_idx,:,max_idx_MMSE_SIC_n[iter_idx]:max_idx_MMSE_SIC_n[iter_idx]+1]*x_n_hat[iter_idx]
-            channel_H_for_MMSE_SIC[iter_idx,:,max_idx_MMSE_SIC_n[iter_idx]:max_idx_MMSE_SIC_n[iter_idx]+1] = np.zeros((inp_class.Rx,1))
+            channel_result_for_MMSE_SIC[iter_idx] = channel_result_for_MMSE_SIC[iter_idx]\
+                                                    -channel_H_for_MMSE_SIC[iter_idx,:,
+                                                     max_idx_MMSE_SIC_n[iter_idx]:max_idx_MMSE_SIC_n[iter_idx]+1]\
+                                                    *x_n_hat[iter_idx]
+            channel_H_for_MMSE_SIC[iter_idx,:,max_idx_MMSE_SIC_n[iter_idx]:max_idx_MMSE_SIC_n[iter_idx]+1] =\
+                np.zeros((inp_class.Rx,1))
         x_hat_arr = np.hstack((x_hat_arr,x_n_hat))
         max_idx_MMSE_SIC_arr = np.vstack((max_idx_MMSE_SIC_arr,max_idx_MMSE_SIC_n))
 

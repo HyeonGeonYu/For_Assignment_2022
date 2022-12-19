@@ -1,14 +1,16 @@
 import numpy as np
 import cvxpy as cvx
-def SDR(inp_class,QPSK_sym_arr):
+def SDR(inp_class):
     channel_H__for_SDR = np.copy(inp_class.channel_H)
     channel_result__for_SDR = np.copy(inp_class.channel_result)
     Trans_num = channel_H__for_SDR.shape[0]
 
     x_hat = np.zeros_like(inp_class.channel_result)
     for Trans_num_idx in range(Trans_num):
-        y_Re_Im = np.vstack((channel_result__for_SDR[Trans_num_idx].real,channel_result__for_SDR[Trans_num_idx].imag))/np.sqrt(inp_class.rootpower_of_symbol**2/2) # 보낸 sym을 +-1, +-1j 로 normalization
-        H_Re_Im = np.vstack(( np.hstack( (channel_H__for_SDR[Trans_num_idx].real, -channel_H__for_SDR[Trans_num_idx].imag) ),
+        y_Re_Im = np.vstack((channel_result__for_SDR[Trans_num_idx].real,channel_result__for_SDR[Trans_num_idx].imag))\
+                  /np.sqrt(inp_class.rootpower_of_symbol**2/2) # 보낸 sym을 +-1, +-1j 로 normalization
+        H_Re_Im = np.vstack(( np.hstack( (channel_H__for_SDR[Trans_num_idx].real,
+                                          -channel_H__for_SDR[Trans_num_idx].imag) ),
                    np.hstack( (channel_H__for_SDR[Trans_num_idx].imag, channel_H__for_SDR[Trans_num_idx].real) ) ))
         L =np.vstack( (np.hstack((np.dot(np.transpose(H_Re_Im), H_Re_Im), np.dot(-np.transpose(H_Re_Im), y_Re_Im))) ,
                        np.hstack((np.dot(-np.transpose(y_Re_Im), H_Re_Im), np.dot(np.transpose(y_Re_Im), y_Re_Im))) ))
