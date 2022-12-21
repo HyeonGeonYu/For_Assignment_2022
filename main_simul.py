@@ -12,7 +12,7 @@ draw_huffmantree = None
 modulation_scheme = "QPSK"
 fading_scheme = "Rayleigh"
 Tx = 4
-Rx = 4
+Rx = 5
 mu = 0
 
 SNR_arr = np.linspace(0, 30, 11)
@@ -69,7 +69,7 @@ for SNR in SNR_arr: # SNR  #dB
     SER_result_SD.append(SER_SD)
     SER_result_SDR.append(SER_SDR)
 
-    print("SNR : %.2f dB 완료"%SNR)
+    print("SNR : %.2f dB complete"%SNR)
 
 plt.figure(figsize=(5.1,4.06))
 plt.xlim([0,30])

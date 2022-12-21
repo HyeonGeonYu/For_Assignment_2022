@@ -1,14 +1,19 @@
 import numpy as np
+import cupy as cp
 import cvxpy as cvx
 def SDR(inp_class):
-    channel_H__for_SDR = np.copy(inp_class.channel_H)
-    channel_result__for_SDR = np.copy(inp_class.channel_result)
+    '''
+    cvxpy 는 cupy 가속이 되지 않는다.
+    '''
+    channel_H__for_SDR = cp.asnumpy(inp_class.channel_H)
+    channel_result__for_SDR = cp.asnumpy(inp_class.channel_result)
+    rootpower_of_symbol__for_SDR = cp.asnumpy(inp_class.rootpower_of_symbol)
     Trans_num = channel_H__for_SDR.shape[0]
 
-    x_hat = np.zeros_like(inp_class.channel_result)
+    x_hat = np.zeros((Trans_num,inp_class.Tx,1),dtype='complex')
     for Trans_num_idx in range(Trans_num):
         y_Re_Im = np.vstack((channel_result__for_SDR[Trans_num_idx].real,channel_result__for_SDR[Trans_num_idx].imag))\
-                  /np.sqrt(inp_class.rootpower_of_symbol**2/2) # 보낸 sym을 +-1, +-1j 로 normalization
+                  /np.sqrt(rootpower_of_symbol__for_SDR**2/2) # 보낸 sym을 +-1, +-1j 로 normalization
         H_Re_Im = np.vstack(( np.hstack( (channel_H__for_SDR[Trans_num_idx].real,
                                           -channel_H__for_SDR[Trans_num_idx].imag) ),
                    np.hstack( (channel_H__for_SDR[Trans_num_idx].imag, channel_H__for_SDR[Trans_num_idx].real) ) ))
@@ -28,5 +33,6 @@ def SDR(inp_class):
         real_arr = max_eig[0:inp_class.Tx]
         imag_arr = 1j*max_eig[inp_class.Tx:2*inp_class.Tx]
 
-        x_hat[Trans_num_idx] = (real_arr +imag_arr).reshape(inp_class.Rx,1)
+        x_hat[Trans_num_idx] = (real_arr +imag_arr).reshape(inp_class.Tx,1)
+    x_hat = cp.asarray(x_hat)
     return x_hat
