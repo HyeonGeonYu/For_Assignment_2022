@@ -1,7 +1,6 @@
-
+import cupy as cp
 import numpy as np
 import communicationsystem
-import between_std_SNR
 import matplotlib.pyplot as plt
 
 
@@ -42,14 +41,14 @@ for SNR in SNR_arr: # SNR  #dB
 
     num_sym = Tx_sym.shape[0]
 
-    num_err_ML = num_sym - np.count_nonzero(np.all(Tx_sym == Rx_sym_ML,axis=1))
-    num_err_ZF = num_sym - np.count_nonzero(np.all(Tx_sym == Rx_sym_ZF,axis=1))
-    num_err_MMSE = num_sym - np.count_nonzero(np.all(Tx_sym == Rx_sym_MMSE,axis=1))
-    num_err_ZF_SIC = num_sym - np.count_nonzero(np.all(Tx_sym == Rx_sym_ZF_SIC,axis=1))
-    num_err_MMSE_SIC = num_sym - np.count_nonzero(np.all(Tx_sym == Rx_sym_MMSE_SIC,axis=1))
-    num_err_ZF_LR = num_sym - np.count_nonzero(np.all(Tx_sym == Rx_sym_LR_ZF,axis=1))
-    num_err_SD = num_sym - np.count_nonzero(np.all(Tx_sym == Rx_sym_SD,axis=1))
-    num_err_SDR = num_sym - np.count_nonzero(np.all(Tx_sym == Rx_sym_SDR,axis=1))
+    num_err_ML = num_sym - cp.count_nonzero(cp.all(Tx_sym == Rx_sym_ML,axis=1))
+    num_err_ZF = num_sym - cp.count_nonzero(cp.all(Tx_sym == Rx_sym_ZF,axis=1))
+    num_err_MMSE = num_sym - cp.count_nonzero(cp.all(Tx_sym == Rx_sym_MMSE,axis=1))
+    num_err_ZF_SIC = num_sym - cp.count_nonzero(cp.all(Tx_sym == Rx_sym_ZF_SIC,axis=1))
+    num_err_MMSE_SIC = num_sym - cp.count_nonzero(cp.all(Tx_sym == Rx_sym_MMSE_SIC,axis=1))
+    num_err_ZF_LR = num_sym - cp.count_nonzero(cp.all(Tx_sym == Rx_sym_LR_ZF,axis=1))
+    num_err_SD = num_sym - cp.count_nonzero(cp.all(Tx_sym == Rx_sym_SD,axis=1))
+    num_err_SDR = num_sym - cp.count_nonzero(cp.all(Tx_sym == Rx_sym_SDR,axis=1))
 
     SER_ML = num_err_ML/num_sym
     SER_ZF = num_err_ZF/num_sym
@@ -60,14 +59,15 @@ for SNR in SNR_arr: # SNR  #dB
     SER_SD = num_err_SD/num_sym
     SER_SDR = num_err_SDR/num_sym
 
-    SER_result_ML.append(SER_ML)
-    SER_result_ZF.append(SER_ZF)
-    SER_result_MMSE.append(SER_MMSE)
-    SER_result_ZF_SIC.append(SER_ZF_SIC)
-    SER_result_MMSE_SIC.append(SER_MMSE_SIC)
-    SER_result_LR_ZF.append(SER_LR_ZF)
-    SER_result_SD.append(SER_SD)
-    SER_result_SDR.append(SER_SDR)
+    SER_result_ML.append(SER_ML.item())
+    SER_result_ZF.append(SER_ZF.item())
+    SER_result_MMSE.append(SER_MMSE.item())
+    SER_result_ZF_SIC.append(SER_ZF_SIC.item())
+    SER_result_MMSE_SIC.append(SER_MMSE_SIC.item())
+    SER_result_LR_ZF.append(SER_LR_ZF.item())
+    SER_result_SD.append(SER_SD.item())
+    SER_result_SDR.append(SER_SDR.item())
+
 
     print("SNR : %.2f dB complete"%SNR)
 
